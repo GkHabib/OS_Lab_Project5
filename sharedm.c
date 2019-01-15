@@ -3,7 +3,7 @@
 #include "mmu.h"
 #include "param.h"
 #include "proc.h"
-
+#include "spinlock.h"
 #include "memlayout.h"
 #include "sharedm.h"
 
@@ -22,12 +22,22 @@ struct _segment {
 	uint frames[MAX_SHARED_PAGES];
 };
 
+struct spinlock lk;
+
+int init_flag = 0;
+
 
 struct _segment shm_table[MAX_SEGMENT] = {0};
 uint num_of_segments = 0;
 
 int shm_open(int id, int page_count, int flags) 
 {
+    if(!init_flag)
+    {
+        initlock(&lk, "dummy");    
+        init_flag = 1;
+    }
+    acquire(&lk);
 	cprintf("1\n");
 	struct proc *p = myproc();
 
@@ -35,6 +45,7 @@ int shm_open(int id, int page_count, int flags)
 	{
 		if(shm_table[i].id == id) {
 			cprintf("error on open: segment %d is already exist.\n", id);
+            release(&lk);
 			return -1;
 		}
 	}
@@ -56,11 +67,14 @@ int shm_open(int id, int page_count, int flags)
 	num_of_segments++;
 
     cprintf("proc with pid: %d opened %d pages with flag %d\n", p->pid, page_count, flags);
+    release(&lk);
 	return 1;
 }
 
 void* shm_attach(int id)
 {
+    acquire(&lk);
+
 	struct proc* p = myproc();
     int ref_cnt;
 	for (int i = 0; i < num_of_segments; ++i)
@@ -82,7 +96,8 @@ void* shm_attach(int id)
 					if(!p->parent || p->parent->pid != shm_table[i].owner)
 					{
 						cprintf("error on attach: permission denied.\n");
-						return 0;
+                        release(&lk);						
+                        return 0;
 					}
 					else
 					{
@@ -103,16 +118,20 @@ void* shm_attach(int id)
 				p->sz += PGSIZE;
 			}
             cprintf("proc with pid: %d attached to pages with id %d, current ref_cnt is:%d\n", p->pid, id, ref_cnt);	
+            release(&lk);
 			return (void*)va;
 		}
 	}
 
 	cprintf("error on attach: segment %d not found\n", id);
+    release(&lk);
 	return 0;
 }
 
 int shm_close(int id)
 {
+    acquire(&lk);
+
     struct proc* p = myproc();
     int ref_cnt;
 	for (int i = 0; i < num_of_segments; ++i)
@@ -126,11 +145,13 @@ int shm_close(int id)
 				shm_table[i].id = -1;
 			}
             cprintf("proc with pid: %d closed pages with id %d, current ref_cnt is:%d\n", p->pid, id, ref_cnt);
+            release(&lk);
             return 1;
 		}
 	}
 
 	cprintf("error on close: segment %d not found\n", id);
+    release(&lk);
 	return -1;
 }
 
