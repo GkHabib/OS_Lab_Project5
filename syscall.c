@@ -407,24 +407,24 @@ my_log_syscalls(void)
 }
 
 
-int
-shm_open(int id, int page_count, int flag)
-{
-  cprintf("shm_open args: %d %d %d\n", id, page_count, flag);
-  return id;
-}
+// int
+// shm_open(int id, int page_count, int flag)
+// {
+//   cprintf("shm_open args: %d %d %d\n", id, page_count, flag);
+//   return id;
+// }
 
-void*
-shm_attach(int id)
-{
-  cprintf("shm_attach args: %d\n", id);
-  return 0;
-}
+// void*
+// shm_attach(int id)
+// {
+//   cprintf("shm_attach args: %d\n", id);
+//   return 0;
+// }
 
-int
-shm_close(int id)
-{
-  cprintf("shm_close args: %d\n", id);
-  return id;
-}
+// int
+// shm_close(int id)
+// {
+//   cprintf("shm_close args: %d\n", id);
+//   return id;
+// }
 
