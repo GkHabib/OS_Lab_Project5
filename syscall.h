@@ -25,3 +25,8 @@
 #define SYS_sort_syscalls  		23
 #define SYS_get_count  			24
 #define SYS_log_syscalls  		25
+
+#define SYS_shm_open            26
+#define SYS_shm_attach          27
+#define SYS_shm_close           28
+

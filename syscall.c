@@ -108,6 +108,9 @@ extern int sys_invoked_syscalls(void);
 extern int sys_sort_syscalls(void);
 extern int sys_get_count(void);
 extern int sys_log_syscalls(void);
+extern int sys_shm_open(void);
+extern int sys_shm_attach(void);
+extern int sys_shm_close(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -135,6 +138,9 @@ static int (*syscalls[])(void) = {
 [SYS_sort_syscalls]       sys_sort_syscalls,
 [SYS_get_count]           sys_get_count,
 [SYS_log_syscalls]        sys_log_syscalls,
+[SYS_shm_open]            sys_shm_open,
+[SYS_shm_attach]          sys_shm_attach,
+[SYS_shm_close]           sys_shm_close,
 };
 
 
@@ -399,3 +405,26 @@ my_log_syscalls(void)
   }
   cprintf("=> End list of all syscalls sort by time\n");
 }
+
+
+int
+shm_open(int id, int page_count, int flag)
+{
+  cprintf("shm_open args: %d %d %d\n", id, page_count, flag);
+  return id;
+}
+
+void*
+shm_attach(int id)
+{
+  cprintf("shm_attach args: %d\n", id);
+  return 0;
+}
+
+int
+shm_close(int id)
+{
+  cprintf("shm_close args: %d\n", id);
+  return id;
+}
+

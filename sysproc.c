@@ -129,3 +129,33 @@ sys_log_syscalls(void)
   my_log_syscalls();
   return 0;
 }
+
+extern int shm_open(int id, int page_count, int flag);
+int
+sys_shm_open(void)
+{
+  int _id, _page_count, _flag;
+  argint(0, &_id);
+  argint(1, &_page_count);
+  argint(2, &_flag);
+  return shm_open(_id, _page_count, _flag);
+}
+
+extern void* shm_attach(int id);
+void *
+sys_shm_attach(void)
+{
+  int _id;
+  argint(0, &_id);
+  return shm_attach(_id);
+}
+
+extern int shm_close(int id);
+int
+sys_shm_close(void)
+{
+  int _id;
+  argint(0, &_id);
+  return shm_close(_id);
+}
+

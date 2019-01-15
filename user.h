@@ -27,6 +27,9 @@ int invoked_syscalls(uint pid);
 int sort_syscalls(uint pid);
 int get_count(uint pid, uint sysnum);
 int log_syscalls(void);
+int shm_open(int, int, int);
+void* shm_attach(int);
+int shm_close(int);
 
 // ulib.c
 int stat(const char*, struct stat*);
