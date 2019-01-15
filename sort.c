@@ -8,8 +8,8 @@
 int
 main(int argc, char *argv[])
 {
-  shm_open(1,2,3);
-  shm_attach(4);
-  shm_close(5);
+  shm_open(1,2,2);
+  // shm_attach(1);
+  shm_close(1);
   exit();
 }

@@ -57,13 +57,14 @@ int shm_open(int id, int page_count, int flags)
 
 	num_of_segments++;
 
+    cprintf("proc with pid: %d opened %d pages with flag %d\n", p->pid, page_count, flags);
 	return 1;
 }
 
 void* shm_attach(int id)
 {
 	struct proc* p = myproc();
-
+    int ref_cnt;
 	for (int i = 0; i < num_of_segments; ++i)
 	{
 		if(shm_table[i].id == id)
@@ -85,6 +86,7 @@ void* shm_attach(int id)
 				perm = PTE_U | PTE_W;
 
 			shm_table[i].ref_count++;
+            ref_cnt = shm_table[i].ref_count;
 
 			int va = p->sz;
 			for (int j = 0; j < shm_table[i].size; ++j)
@@ -92,7 +94,7 @@ void* shm_attach(int id)
 				mappages(p->pgdir, (void*)p->sz, PGSIZE, shm_table[i].frames[j], perm);
 				p->sz += PGSIZE;
 			}
-			
+            cprintf("proc with pid: %d attached to pages with id %d, current ref_cnt is:%d\n", p->pid, id, ref_cnt);	
 			return (void*)va;
 		}
 	}
@@ -103,15 +105,20 @@ void* shm_attach(int id)
 
 int shm_close(int id)
 {
+    struct proc* p = myproc();
+    int ref_cnt;
 	for (int i = 0; i < num_of_segments; ++i)
 	{
 		if(shm_table[i].id == id)
 		{
 			shm_table[i].ref_count--;
+            ref_cnt = shm_table[i].ref_count;
 			if(shm_table[i].ref_count == 0) 
 			{
 				shm_table[i].id = -1;
 			}
+            cprintf("proc with pid: %d closed pages with id %d, current ref_cnt is:%d\n", p->pid, id, ref_cnt);
+            return 1;
 		}
 	}
 
