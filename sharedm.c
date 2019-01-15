@@ -5,14 +5,11 @@
 #include "proc.h"
 
 #include "memlayout.h"
+#include "sharedm.h"
 
 
-#define MAX_SHARED_PAGES 255
+#define MAX_SHARED_PAGES 10
 #define MAX_SEGMENT 20
-
-
-#define ONLY_OWNER_WRITE 2
-#define ONLY_CHILD_CAN_ATTACH 4
 
 
 
@@ -31,6 +28,7 @@ uint num_of_segments = 0;
 
 int shm_open(int id, int page_count, int flags) 
 {
+	cprintf("1\n");
 	struct proc *p = myproc();
 
 	for (int i = 0; i < num_of_segments; ++i)
@@ -44,14 +42,14 @@ int shm_open(int id, int page_count, int flags)
 	shm_table[num_of_segments].id = id;
 	shm_table[num_of_segments].owner = myproc()->pid;
 	shm_table[num_of_segments].flags = flags;
-	shm_table[num_of_segments].ref_count = 1;
+	shm_table[num_of_segments].ref_count = 0;
 	shm_table[num_of_segments].size = page_count;
 	for (int i = 0; i < page_count; ++i)
 	{
+		
+		// char* mem = 0;
 		char* mem = kalloc();
 		memset(mem, 0, PGSIZE);
-  		mappages(p->pgdir, (void*)p->sz, PGSIZE, V2P(mem), PTE_W|PTE_U);
-  		p->sz += PGSIZE;
   		shm_table[num_of_segments].frames[i] = V2P(mem);
 	}
 
@@ -69,21 +67,31 @@ void* shm_attach(int id)
 	{
 		if(shm_table[i].id == id)
 		{
+			int perm = PTE_U;
+
 			if(shm_table[i].flags & ONLY_CHILD_CAN_ATTACH)
 			{
 				// should check permission
-				if(!p->parent || p->parent->pid != shm_table[i].owner)
+				if(p->pid == shm_table[i].owner)
 				{
-					cprintf("error on attach: permission denied.\n");
-					return 0;
+					// grant
+					perm |= PTE_W;
+				}
+				else
+				{
+					if(!p->parent || p->parent->pid != shm_table[i].owner)
+					{
+						cprintf("error on attach: permission denied.\n");
+						return 0;
+					}
+					else
+					{
+						// grant
+						if(! (shm_table[i].flags & ONLY_OWNER_WRITE))
+							perm |= PTE_W;
+					}
 				}
 			}
-
-			int perm;
-			if(shm_table[i].flags & ONLY_OWNER_WRITE)
-				perm = PTE_U;
-			else
-				perm = PTE_U | PTE_W;
 
 			shm_table[i].ref_count++;
             ref_cnt = shm_table[i].ref_count;
@@ -125,6 +133,21 @@ int shm_close(int id)
 	cprintf("error on close: segment %d not found\n", id);
 	return -1;
 }
+
+int is_shared_memory(uint pa)
+{
+	for (int i = 0; i < num_of_segments; ++i)
+	{
+		for (int j = 0; j < shm_table[i].size; ++j)
+		{
+			if(shm_table[i].frames[j] == pa)
+				return 1;
+		}
+	}
+
+	return 0;
+}
+
 
 
 

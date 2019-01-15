@@ -1,0 +1,2 @@
+#define ONLY_OWNER_WRITE 2
+#define ONLY_CHILD_CAN_ATTACH 4
