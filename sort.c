@@ -10,9 +10,29 @@
 int
 main(int argc, char *argv[])
 {
-  shm_open(1, 3, ONLY_OWNER_WRITE);
-  // shm_open(1, 2, ONLY_OWNER_WRITE | ONLY_CHILD_CAN_ATTACH);
+  shm_open(1, 1, ONLY_CHILD_CAN_ATTACH);
   shm_attach(1);
-  // shm_close(1);
-  exit();
+  int pid;
+  if((pid = fork()))
+  {
+    if((pid = fork()))
+    {
+      wait();
+      wait();
+      shm_close(1);
+      exit();
+    }
+    else
+    {
+      shm_attach(1);
+      shm_close(1);
+    }
+  }
+  else
+  {
+    shm_attach(1);
+    shm_close(1);
+  }
+  // shm_open(1, 2, ONLY_OWNER_WRITE | ONLY_CHILD_CAN_ATTACH);
+  // shm_attach(1);
 }
