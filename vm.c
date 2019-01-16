@@ -10,6 +10,8 @@
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
 
+extern int is_shared_memory(uint);
+
 // Set up CPU's kernel segment descriptors.
 // Run once on entry on each CPU.
 void
@@ -270,8 +272,11 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
       pa = PTE_ADDR(*pte);
       if(pa == 0)
         panic("kfree");
-      char *v = P2V(pa);
-      kfree(v);
+      if(!is_shared_memory(pa))
+      {
+        char *v = P2V(pa);
+        kfree(v);
+      }
       *pte = 0;
     }
   }
@@ -291,7 +296,8 @@ freevm(pde_t *pgdir)
   for(i = 0; i < NPDENTRIES; i++){
     if(pgdir[i] & PTE_P){
       char * v = P2V(PTE_ADDR(pgdir[i]));
-      kfree(v);
+      if(!is_shared_memory(PTE_ADDR(pgdir[i])))
+        kfree(v);
     }
   }
   kfree((char*)pgdir);
@@ -311,16 +317,20 @@ clearpteu(pde_t *pgdir, char *uva)
 }
 
 
-extern int is_shared_memory(uint pa);
+extern int is_shared_memory_with_inc(uint pa);
+extern int is_only_child_can_attach(uint pa);
+extern int get_owner_of_segment(uint pa);
+extern int is_only_owner_can_write(uint pa);
 // Given a parent process's page table, create a copy
 // of it for a child.
 pde_t*
-copyuvm(pde_t *pgdir, uint sz)
+copyuvm(pde_t *pgdir, uint sz, uint parent_pid)
 {
   pde_t *d;
   pte_t *pte;
   uint pa, i, flags;
   char *mem;
+  // uint my_pa;
 
   if((d = setupkvm()) == 0)
     return 0;
@@ -331,7 +341,19 @@ copyuvm(pde_t *pgdir, uint sz)
       panic("copyuvm: page not present");
     pa = PTE_ADDR(*pte);
     flags = PTE_FLAGS(*pte);
-    if(!is_shared_memory(pa))
+    if(is_shared_memory_with_inc(pa))
+    {
+      cprintf("Log: shared memory on fork found. skipping kalloc.\n");
+      if(!is_only_child_can_attach(pa) || get_owner_of_segment(pa) == parent_pid)
+      {
+        if(is_only_owner_can_write(pa))
+          flags &= ~PTE_W;
+        if(mappages(d, (void*)i, PGSIZE, pa, flags) < 0) {
+          goto bad;
+        }
+      }
+    }
+    else
     {
       if((mem = kalloc()) == 0)
         goto bad;

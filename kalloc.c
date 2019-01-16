@@ -56,6 +56,7 @@ freerange(void *vstart, void *vend)
 // which normally should have been returned by a
 // call to kalloc().  (The exception is when
 // initializing the allocator; see kinit above.)
+// extern int is_shared_memory(uint pa);
 void
 kfree(char *v)
 {
